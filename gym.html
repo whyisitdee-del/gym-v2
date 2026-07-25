@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Training Log</title>
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0c0e;
+    --surface:#141416;
+    --border:#26262a;
+    --border-soft:#1c1c1f;
+    --text:#f1efe9;
+    --text-muted:#8a8a90;
+    --text-faint:#57575c;
+    --accent:#ff5a3c;
+    --accent-soft:rgba(255,90,60,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    -webkit-tap-highlight-color:transparent;
+    padding-bottom:92px;
+    min-height:100vh;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .display{font-family:'Space Grotesk',sans-serif;}
+  .wrap{max-width:480px;margin:0 auto;padding:0 18px;}
+
+  /* ---------- Header ---------- */
+  header{
+    position:sticky;top:0;z-index:20;
+    background:var(--bg);
+    border-bottom:1px solid var(--border-soft);
+    padding-top:18px;
+  }
+  .header-row{display:flex;align-items:flex-start;justify-content:space-between;}
+  .eyebrow{
+    font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--text-faint);font-weight:500;
+  }
+  .today-date{
+    font-size:21px;font-weight:600;margin-top:3px;letter-spacing:-0.01em;
+  }
+  .icon-btn{
+    background:none;border:1px solid var(--border);color:var(--text-muted);
+    width:34px;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:border-color .15s, color .15s;flex-shrink:0;
+  }
+  .icon-btn:hover{color:var(--text);border-color:#3a3a3f;}
+  .icon-btn svg{width:15px;height:15px;}
+
+  /* ---------- Tabs ---------- */
+  .tabs{display:flex;margin-top:16px;}
+  .tab{
+    flex:1;background:none;border:none;padding:12px 4px 11px;cursor:pointer;
+    border-bottom:2px solid transparent;color:var(--text-muted);
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    transition:color .15s, border-color .15s;
+  }
+  .tab.active{color:var(--text);border-color:var(--accent);}
+  .tab-label{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;}
+  .tab-date{font-size:12.5px;color:var(--text-muted);}
+  .tab.active .tab-date{color:var(--accent);}
+
+  .schedule-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:11px 2px 14px;font-size:12px;color:var(--text-faint);
+  }
+  .schedule-row .lbl{letter-spacing:.06em;}
+  .date-edit{
+    display:flex;align-items:center;gap:4px;
+    background:var(--surface);border:1px solid var(--border);border-radius:6px;
+    padding:4px 6px;
+  }
+  .date-edit input{
+    background:none;border:none;color:var(--text);
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;text-align:center;
+    outline:none;padding:1px 0;-moz-appearance:textfield;
+  }
+  .date-edit input::-webkit-outer-spin-button,
+  .date-edit input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .date-edit input.seg-mm,.date-edit input.seg-dd{width:16px;}
+  .date-edit input.seg-yyyy{width:32px;}
+  .date-edit input::placeholder{color:var(--text-faint);}
+  .date-edit .sep{color:var(--text-faint);font-size:11px;}
+  .date-edit.highlight{border-color:var(--accent);}
+  .hint{font-size:11px;color:var(--accent);margin-top:6px;}
+
+  /* ---------- Exercise list ---------- */
+  main{padding-top:6px;}
+  .exercise{border-bottom:1px solid var(--border-soft);padding:15px 0;}
+  .exercise:last-child{border-bottom:none;}
+  .row-main{display:flex;align-items:center;gap:13px;cursor:pointer;}
+  .seq{
+    font-size:11px;color:var(--text-faint);width:20px;flex-shrink:0;padding-top:2px;
+  }
+  .info{flex:1;min-width:0;}
+  .name-line{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+  .name{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;transition:opacity .2s;}
+  .target{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--text-faint);white-space:nowrap;flex-shrink:0;}
+  .sub-line{display:flex;justify-content:space-between;align-items:center;margin-top:5px;gap:8px;}
+  .notes{font-size:12px;color:var(--text-muted);line-height:1.35;}
+  .stats{font-size:12px;text-align:right;white-space:nowrap;flex-shrink:0;}
+  .stats .weight{font-weight:600;color:var(--text);}
+  .stats .sets{color:var(--text-muted);display:block;font-size:11px;margin-bottom:1px;}
+  .chevron{width:11px;height:11px;color:var(--text-faint);flex-shrink:0;transition:transform .25s ease;margin-left:2px;}
+  .chevron.open{transform:rotate(180deg);}
+
+  .checkbox{
+    appearance:none;-webkit-appearance:none;width:20px;height:20px;flex-shrink:0;
+    border:1.5px solid #3a3a3f;border-radius:5px;outline:none;cursor:pointer;position:relative;
+    background:var(--surface);transition:background .15s, border-color .15s;
+  }
+  .checkbox:checked{background:var(--accent);border-color:var(--accent);}
+  .checkbox:checked::after{
+    content:'';position:absolute;left:6px;top:2px;width:5px;height:10px;
+    border:solid #0c0c0e;border-width:0 2px 2px 0;transform:rotate(45deg);
+  }
+
+  .exercise.done .name{opacity:.45;}
+  .exercise.done .notes,.exercise.done .stats{opacity:.4;}
+
+  .video-panel{max-height:0;overflow:hidden;transition:max-height .28s ease;}
+  .video-panel.open{max-height:280px;margin-top:13px;}
+  .video-card{
+    display:block;position:relative;border-radius:8px;overflow:hidden;
+    border:1px solid var(--border);background:var(--surface);
+  }
+  .video-card{width:100%;padding:0;cursor:pointer;font:inherit;}
+  .video-card img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#000;}
+  .video-card iframe{display:block;width:100%;aspect-ratio:16/9;border:0;background:#000;}
+  .play-badge{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:46px;height:46px;border-radius:50%;background:rgba(12,12,14,.72);
+    border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;
+  }
+  .play-badge svg{width:15px;height:15px;color:#fff;margin-left:2px;}
+  .video-link{
+    display:flex;align-items:center;gap:6px;padding:9px 2px 0;font-size:12px;
+    color:var(--text-muted);text-decoration:none;
+  }
+  .video-link:hover{color:var(--text);}
+  .video-link svg{width:12px;height:12px;flex-shrink:0;}
+
+  /* ---------- Footer ---------- */
+  footer{
+    position:fixed;bottom:0;left:0;right:0;background:var(--bg);
+    border-top:1px solid var(--border-soft);padding:13px 18px 16px;
+  }
+  .progress-text{display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:8px;}
+  .progress-text .count{color:var(--text-muted);letter-spacing:.03em;}
+  .progress-text .pct{color:var(--accent);font-weight:600;}
+  .ticks{display:flex;gap:3px;height:6px;}
+  .tick{flex:1;border-radius:2px;background:var(--border);transition:background .2s;}
+  .tick.filled{background:var(--accent);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="header-row">
+      <div>
+        <div class="eyebrow">Training Log</div>
+        <div class="today-date mono" id="today-date">—</div>
+      </div>
+      <button class="icon-btn" id="reset-btn" title="Clear today's checks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+      </button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab" id="tab-a" onclick="switchTab('A')">
+        <span class="tab-label">Session A</span>
+        <span class="tab-date mono" id="tab-a-date">—</span>
+      </button>
+      <button class="tab" id="tab-b" onclick="switchTab('B')">
+        <span class="tab-label">Session B</span>
+        <span class="tab-date mono" id="tab-b-date">—</span>
+      </button>
+    </div>
+
+    <div class="wrap" style="padding:0;">
+      <div class="schedule-row">
+        <span class="lbl">Scheduled for <span id="edit-day-label" style="color:var(--text-muted)"></span></span>
+        <div class="date-edit" id="date-edit-wrap">
+          <input type="text" inputmode="numeric" maxlength="2" class="seg-mm mono" id="date-mm" placeholder="MM">
+          <span class="sep">/</span>
+          <input type="text" inputmode="numeric" maxlength="2" class="seg-dd mono" id="date-dd" placeholder="DD">
+          <span class="sep">/</span>
+          <input type="text" inputmode="numeric" maxlength="4" class="seg-yyyy mono" id="date-yyyy" placeholder="YYYY">
+        </div>
+      </div>
+      <div class="hint" id="first-run-hint" style="display:none;">Set this to the next date you'll actually train — everything else is calculated from it.</div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="exercise-list"></div>
+</main>
+
+<footer>
+  <div class="wrap" style="padding:0;">
+    <div class="progress-text">
+      <span class="count mono" id="progress-count">0 / 0 done</span>
+      <span class="pct mono" id="progress-pct">0%</span>
+    </div>
+    <div class="ticks" id="ticks"></div>
+  </div>
+</footer>
+
+<script>
+/* ============ Data ============ */
+const workoutData = {
+  A: [
+    { id:'a1', name:'Goblet Squat', target:'Quads & Glutes', setsReps:'3 × 8–12', weight:'14–16kg', notes:'One dumbbell. Keep chest up.', videoId:'lRYBbchqxtI' },
+    { id:'a2', name:'Lat Pulldown', target:'Back', setsReps:'3 × 8–12', weight:'25–30kg', notes:'Machine. Pull to upper chest.', videoId:'SALxEARiMkw' },
+    { id:'a3', name:'Chest Press', target:'Chest', setsReps:'3 × 8–12', weight:'25kg', notes:'Machine.', videoId:'gNBU7hmW2EU' },
+    { id:'a4', name:'Leg Curl', target:'Hamstrings', setsReps:'3 × 10–15', weight:'25kg', notes:'Machine.', videoId:'t9sTSr-JYSs' },
+    { id:'a5', name:'Lateral Raise', target:'Shoulders', setsReps:'3 × 12–15', weight:'3–4kg', notes:'Dumbbells. Lead with elbows.', videoId:'K5hFLVJnnsw' },
+    { id:'a6', name:'Tricep Pushdown', target:'Arms', setsReps:'3 × 10–15', weight:'10–15kg', notes:'Cable machine.', videoId:'2-LAMcpzODU' },
+  ],
+  B: [
+    { id:'b1', name:'Leg Press', target:'Legs (Overall)', setsReps:'3 × 8–12', weight:'60–65kg', notes:"Machine. Don't lock knees at top.", videoId:'yZmx_Ac3880' },
+    { id:'b2', name:'Seated Cable Row', target:'Back', setsReps:'3 × 8–12', weight:'25–30kg', notes:'Machine. Squeeze shoulder blades.', videoId:'GZbfZ033f74' },
+    { id:'b3', name:'Overhead Press', target:'Shoulders', setsReps:'3 × 8–12', weight:'6–8kg (DB) / 15kg (mach)', notes:'Dumbbells or machine.', videoId:'qEwKCR5JCog' },
+    { id:'b4', name:'Romanian Deadlift', target:'Hamstrings & Glutes', setsReps:'3 × 8–12', weight:'10–12kg', notes:'Per dumbbell. Slight knee bend.', videoId:'JCXUYuzwNrM' },
+    { id:'b5', name:'Bicep Curl', target:'Arms', setsReps:'3 × 10–15', weight:'5kg', notes:'Dumbbells. Keep elbows tucked.', videoId:'ykJmrZ5v0Oo' },
+    { id:'b6', name:'Weighted Plank', target:'Core', setsReps:'3 × 45–60s', weight:'10kg plate', notes:'Or ab crunch machine, 20–25kg, 3×12.', videoId:'pSHjTRCQxIw' },
+  ]
+};
+
+/* ============ Date helpers (all local-time, no UTC drift) ============ */
+function parseLocalDate(str){ const [y,m,d]=str.split('-').map(Number); return new Date(y,m-1,d); }
+function formatLocalDate(date){ const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,'0'),d=String(date.getDate()).padStart(2,'0'); return `${y}-${m}-${d}`; }
+function startOfDay(date){ return new Date(date.getFullYear(),date.getMonth(),date.getDate()); }
+function addDays(date,n){ const d=new Date(date); d.setDate(d.getDate()+n); return d; }
+function sameDay(a,b){ return formatLocalDate(a)===formatLocalDate(b); }
+
+/* ============ Schedule state ============ */
+// The whole recurring A/B pattern is derived from ONE anchor point (a date that
+// is known to be session `anchorDay`). Every other occurrence is computed fresh
+// from the device's current date/time — nothing is "advanced" by hand.
+let schedule = JSON.parse(localStorage.getItem('gymlog_schedule_v2'));
+let firstRun = false;
+if (!schedule) {
+  firstRun = true;
+  schedule = { anchorDate: formatLocalDate(new Date()), anchorDay: 'A' };
+  localStorage.setItem('gymlog_schedule_v2', JSON.stringify(schedule));
+}
+let completion = JSON.parse(localStorage.getItem('gymlog_completion_v2')) || {};
+
+function saveSchedule(){ localStorage.setItem('gymlog_schedule_v2', JSON.stringify(schedule)); }
+function saveCompletion(){ localStorage.setItem('gymlog_completion_v2', JSON.stringify(completion)); }
+
+// Next (or today's) occurrence of `day` ('A'/'B'), computed against right now.
+function getOccurrence(day){
+  const today = startOfDay(new Date());
+  const anchor = startOfDay(parseLocalDate(schedule.anchorDate));
+  const offsetBase = (day === schedule.anchorDay) ? 0 : 2;
+  let occurrence = addDays(anchor, offsetBase);
+  const diffDays = Math.round((today - occurrence) / 86400000);
+  if (diffDays > 0) {
+    const cycles = Math.ceil(diffDays / 4);
+    occurrence = addDays(occurrence, cycles * 4);
+  }
+  return occurrence;
+}
+
+function weekdayShort(date){ return date.toLocaleDateString('en-US',{weekday:'short'}); }
+function dateShort(date){ return date.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+
+/* ============ App state ============ */
+let currentDay = getOccurrence('A') <= getOccurrence('B') ? 'A' : 'B';
+
+/* ============ Render ============ */
+function render(){
+  const today = new Date();
+  document.getElementById('today-date').textContent =
+    today.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+  ['A','B'].forEach(day=>{
+    const occ = getOccurrence(day);
+    const label = sameDay(occ, startOfDay(today)) ? 'Today' : `${weekdayShort(occ)} · ${dateShort(occ)}`;
+    document.getElementById(`tab-${day.toLowerCase()}-date`).textContent = label;
+  });
+
+  document.getElementById('tab-a').classList.toggle('active', currentDay==='A');
+  document.getElementById('tab-b').classList.toggle('active', currentDay==='B');
+  document.getElementById('edit-day-label').textContent = `Session ${currentDay}`;
+
+  const occDate = getOccurrence(currentDay);
+  if (!dateFieldsFocused()) {
+    document.getElementById('date-mm').value = String(occDate.getMonth()+1).padStart(2,'0');
+    document.getElementById('date-dd').value = String(occDate.getDate()).padStart(2,'0');
+    document.getElementById('date-yyyy').value = String(occDate.getFullYear());
+  }
+
+  const hint = document.getElementById('first-run-hint');
+  const wrap = document.getElementById('date-edit-wrap');
+  if (firstRun) { hint.style.display='block'; wrap.classList.add('highlight'); }
+  else { hint.style.display='none'; wrap.classList.remove('highlight'); }
+
+  renderExercises(occDate);
+}
+
+function completionKey(day, dateStr, exId){ return `${day}|${dateStr}|${exId}`; }
+
+function renderExercises(occDate){
+  const dateStr = formatLocalDate(occDate);
+  const list = document.getElementById('exercise-list');
+  list.innerHTML = '';
+  const exercises = workoutData[currentDay];
+
+  exercises.forEach((ex, i) => {
+    const key = completionKey(currentDay, dateStr, ex.id);
+    const isDone = !!completion[key];
+
+    const el = document.createElement('div');
+    el.className = `exercise${isDone ? ' done' : ''}`;
+    el.id = `ex-${ex.id}`;
+    el.innerHTML = `
+      <div class="row-main" onclick="toggleVideo('${ex.id}', event)">
+        <span class="seq mono">${String(i+1).padStart(2,'0')}</span>
+        <div class="info">
+          <div class="name-line">
+            <span class="name">${ex.name}</span>
+            <span class="target">${ex.target}</span>
+          </div>
+          <div class="sub-line">
+            <span class="notes">${ex.notes}</span>
+            <span class="stats mono">
+              <span class="sets">${ex.setsReps}</span>
+              <span class="weight">${ex.weight}</span>
+            </span>
+          </div>
+        </div>
+        <svg class="chevron" id="chev-${ex.id}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <input type="checkbox" class="checkbox" id="check-${ex.id}" ${isDone?'checked':''}
+               onclick="event.stopPropagation()" onchange="toggleExercise('${ex.id}')">
+      </div>
+      <div class="video-panel" id="video-${ex.id}">
+        <div class="video-card" id="player-${ex.id}" data-video-id="${ex.videoId}" data-name="${ex.name}"
+             onclick="loadPlayer('${ex.id}', event)">
+          <img src="https://img.youtube.com/vi/${ex.videoId}/mqdefault.jpg" alt="${ex.name} demonstration" loading="lazy">
+          <span class="play-badge">
+            <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20"/></svg>
+          </span>
+        </div>
+        <a class="video-link" href="https://www.youtube.com/watch?v=${ex.videoId}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Open on YouTube instead
+        </a>
+      </div>
+    `;
+    list.appendChild(el);
+  });
+
+  updateProgress(dateStr);
+}
+
+function toggleVideo(id, event){
+  if (event.target.closest('.checkbox')) return;
+  const panel = document.getElementById(`video-${id}`);
+  const willOpen = !panel.classList.contains('open');
+  panel.classList.toggle('open');
+  document.getElementById(`chev-${id}`).classList.toggle('open');
+  if (!willOpen) resetPlayer(id); // stop playback when collapsing
+}
+
+// Swap the thumbnail for a real embedded player, loaded on demand.
+function loadPlayer(id, event){
+  event.stopPropagation();
+  const card = document.getElementById(`player-${id}`);
+  const videoId = card.dataset.videoId;
+  const name = card.dataset.name;
+  card.onclick = null;
+  card.style.cursor = 'default';
+  card.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1"
+    title="${name} demonstration" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;
+}
+
+function resetPlayer(id){
+  const card = document.getElementById(`player-${id}`);
+  if (!card || !card.querySelector('iframe')) return; // nothing playing, leave thumbnail as-is
+  const videoId = card.dataset.videoId;
+  const name = card.dataset.name;
+  card.innerHTML = `
+    <img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" alt="${name} demonstration" loading="lazy">
+    <span class="play-badge">
+      <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20"/></svg>
+    </span>`;
+  card.onclick = (e) => loadPlayer(id, e);
+  card.style.cursor = 'pointer';
+}
+
+function toggleExercise(id){
+  const occDate = getOccurrence(currentDay);
+  const dateStr = formatLocalDate(occDate);
+  const key = completionKey(currentDay, dateStr, id);
+  const checked = document.getElementById(`check-${id}`).checked;
+  completion[key] = checked;
+  saveCompletion();
+  document.getElementById(`ex-${id}`).classList.toggle('done', checked);
+  updateProgress(dateStr);
+}
+
+function updateProgress(dateStr){
+  const exercises = workoutData[currentDay];
+  const total = exercises.length;
+  const done = exercises.filter(ex => completion[completionKey(currentDay, dateStr, ex.id)]).length;
+  const pct = total ? Math.round((done/total)*100) : 0;
+
+  document.getElementById('progress-count').textContent = `${done} / ${total} done`;
+  document.getElementById('progress-pct').textContent = `${pct}%`;
+
+  const ticks = document.getElementById('ticks');
+  ticks.innerHTML = '';
+  for (let i=0; i<total; i++){
+    const t = document.createElement('div');
+    t.className = `tick${i < done ? ' filled' : ''}`;
+    ticks.appendChild(t);
+  }
+}
+
+function switchTab(day){
+  if (currentDay === day) return;
+  currentDay = day;
+  render();
+}
+
+/* ============ Date editing → re-anchors the whole schedule ============ */
+const mmField = document.getElementById('date-mm');
+const ddField = document.getElementById('date-dd');
+const yyyyField = document.getElementById('date-yyyy');
+
+function dateFieldsFocused(){
+  return [mmField, ddField, yyyyField].includes(document.activeElement);
+}
+
+function tryCommitDate(){
+  const mm = parseInt(mmField.value, 10);
+  const dd = parseInt(ddField.value, 10);
+  const yyyy = parseInt(yyyyField.value, 10);
+  if (!mm || !dd || !yyyy || String(yyyy).length < 4) return;
+  if (mm < 1 || mm > 12) return;
+  const candidate = new Date(yyyy, mm - 1, dd);
+  // Reject dates that overflow (e.g. Feb 30 rolling into March)
+  if (candidate.getMonth() !== mm - 1 || candidate.getDate() !== dd) return;
+
+  schedule.anchorDate = formatLocalDate(candidate);
+  schedule.anchorDay = currentDay;
+  saveSchedule();
+  firstRun = false;
+  render();
+}
+
+function setupDateSegment(field, maxLen, next){
+  field.addEventListener('input', () => {
+    field.value = field.value.replace(/\D/g,'').slice(0, maxLen);
+    if (field.value.length === maxLen && next) next.focus();
+    if (field.value.length === maxLen && !next) tryCommitDate();
+  });
+  field.addEventListener('blur', () => {
+    if (field !== yyyyField && field.value.length === 1) field.value = '0' + field.value;
+    tryCommitDate();
+  });
+  field.addEventListener('keydown', (e) => {
+    if (e.key === 'Backspace' && field.value === '' && field.previousField) {
+      field.previousField.focus();
+    }
+  });
+}
+setupDateSegment(mmField, 2, ddField);
+setupDateSegment(ddField, 2, yyyyField);
+ddField.previousField = mmField;
+setupDateSegment(yyyyField, 4, null);
+yyyyField.previousField = ddField;
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  const occDate = getOccurrence(currentDay);
+  const dateStr = formatLocalDate(occDate);
+  workoutData[currentDay].forEach(ex => {
+    delete completion[completionKey(currentDay, dateStr, ex.id)];
+  });
+  saveCompletion();
+  render();
+});
+
+/* Keep the header date correct if the tab is left open across midnight */
+setInterval(() => {
+  const nowStr = formatLocalDate(new Date());
+  if (nowStr !== render._lastDate) { render._lastDate = nowStr; render(); }
+}, 60000);
+
+render();
+</script>
+</body>
+</html>
